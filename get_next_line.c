@@ -6,7 +6,7 @@
 /*   By: mel-adna <mel-adna@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/24 11:26:30 by mel-adna          #+#    #+#             */
-/*   Updated: 2024/11/30 11:59:28 by mel-adna         ###   ########.fr       */
+/*   Updated: 2024/11/30 22:38:10 by mel-adna         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,15 +30,20 @@ char	*extract_line(char **strline)
 	i = 0;
 	while ((*strline)[i] && (*strline)[i] != '\n')
 		i++;
-	newline = malloc(i + 2);
+	if ((*strline)[i] == '\n')
+		newline = malloc(i + 2);
+	else
+		newline = malloc(i + 1);
 	if (!newline)
-		return (NULL);
+		return (free(*strline), NULL);
 	ft_memcpy(newline, *strline, i);
 	if ((*strline)[i] == '\n')
 		newline[i++] = '\n';
 	newline[i] = '\0';
 	remaining = ft_strdup(*strline + i);
-	free(*strline);
+	if (!remaining)
+		return (free(newline), free(*strline), NULL);
+	free_str(strline);
 	*strline = remaining;
 	return (newline);
 }
@@ -57,14 +62,16 @@ char	*read_and_concat(int fd, char **strline)
 	{
 		bufferstr[nread] = '\0';
 		temp = ft_strjoin(*strline, bufferstr);
-		free(*strline);
+		if (!temp)
+			return (free(bufferstr), free_str(strline), NULL);
+		free_str(strline);
 		*strline = temp;
 		if (ft_strchr(bufferstr, '\n'))
 			break ;
 		nread = read(fd, bufferstr, BUFFER_SIZE);
 	}
 	free(bufferstr);
-	if (nread < 0 || (nread == 0 && strline[0][0] == '\0'))
+	if (nread < 0 || **strline == '\0')
 		return (free_str(strline), NULL);
 	return (*strline);
 }
@@ -74,7 +81,7 @@ char	*get_next_line(int fd)
 	static char	*strline = NULL;
 	char		*line;
 
-	if (fd < 0 || BUFFER_SIZE < 1)
+	if (fd < 0 || BUFFER_SIZE <= 0 || read(fd, 0, 0) < 0)
 		return (free_str(&strline), NULL);
 	if (!strline)
 		strline = ft_strdup("");
